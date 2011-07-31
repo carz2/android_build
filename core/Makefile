@@ -718,7 +718,6 @@ recovery_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.img
 recovery_build_prop := $(INSTALLED_BUILD_PROP_TARGET)
 recovery_binary := $(call intermediates-dir-for,EXECUTABLES,recovery)/recovery
 recovery_resources_common := $(call include-path-for, recovery)/res
-recovery_resources_htc := $(call include-path-for, recovery)/htc/res
 recovery_resources_private := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/res))
 recovery_resource_deps := $(shell find $(recovery_resources_common) \
   $(recovery_resources_private) -type f)
@@ -807,9 +806,6 @@ ifneq ($(BOARD_USES_COMBINED_RECOVERY),true)
 endif
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/system/bin
 	cp -rf $(recovery_resources_common) $(TARGET_RECOVERY_ROOT_OUT)/
-ifeq ($(BOARD_USES_RECOVERY_CHARGEMODE),true)
-	cp -rf $(recovery_resources_htc) $(TARGET_RECOVERY_ROOT_OUT)/
-endif
 	$(foreach item,$(recovery_resources_private), \
 	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/)
 	$(foreach item,$(recovery_fstab), \
@@ -1136,6 +1132,22 @@ else
 $(BUILT_TARGET_FILES_PACKAGE): tool_extensions := $(TARGET_RELEASETOOLS_EXTENSIONS)
 endif
 
+ifeq ($(BOARD_USES_UBOOT_MULTIIMAGE),true)
+
+  ZIP_SAVE_UBOOTIMG_ARGS := -A ARM -O Linux -T multi -C none -n Image
+
+  BOARD_UBOOT_ENTRY := $(strip $(BOARD_UBOOT_ENTRY))
+  ifdef BOARD_UBOOT_ENTRY
+    ZIP_SAVE_UBOOTIMG_ARGS += -e $(BOARD_UBOOT_ENTRY)
+  endif
+  BOARD_UBOOT_LOAD := $(strip $(BOARD_UBOOT_LOAD))
+  ifdef BOARD_UBOOT_LOAD
+    ZIP_SAVE_UBOOTIMG_ARGS += -a $(BOARD_UBOOT_LOAD)
+  endif
+
+endif
+
+
 # Depending on the various images guarantees that the underlying
 # directories are up-to-date.
 $(BUILT_TARGET_FILES_PACKAGE): \
@@ -1173,6 +1185,7 @@ endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/RECOVERY/pagesize
 endif
+
 	@# Components of the boot image
 	$(hide) mkdir -p $(zip_root)/BOOT
 	$(hide) $(call package_files-copy-root, \
@@ -1200,6 +1213,10 @@ endif
 ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/BOOT/pagesize
 endif
+ifdef ZIP_SAVE_UBOOTIMG_ARGS
+	$(hide) echo "$(ZIP_SAVE_UBOOTIMG_ARGS)" > $(zip_root)/BOOT/ubootargs
+endif
+
 	$(hide) $(foreach t,$(INSTALLED_RADIOIMAGE_TARGET),\
 	            mkdir -p $(zip_root)/RADIO; \
 	            $(ACP) $(t) $(zip_root)/RADIO/$(notdir $(t));)
