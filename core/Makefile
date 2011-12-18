@@ -1167,7 +1167,7 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(OTATOOLS)
 .PHONY: otapackage carz
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 carz: otapackage
-	$(hide) ./vendor/cm/tools/squisher
+	$(hide) ./vendor/tools/squisher
 
 
 # -----------------------------------------------------------------
